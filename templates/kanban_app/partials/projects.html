@@ -1,0 +1,27 @@
+<div class="projects-grid"
+    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; padding: 1rem 0;">
+    {% for project in projects %}
+    <a href="{% url 'project_board' project.id %}" class="project-card"
+        style="display: block; padding: 1.5rem; background: var(--surface-light); border-radius: var(--radius-lg); border: 1px solid var(--border-color); text-decoration: none; color: inherit; transition: all 0.2s ease;">
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem;">{{ project.name }}</h3>
+        <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">Created {{ project.created_at|date:"M j, Y"
+            }}</p>
+    </a>
+    {% empty %}
+    <div class="empty-state"
+        style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--surface-light); border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+        <h3 style="margin-bottom: 0.5rem;">No projects yet</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Get started by creating your first project.</p>
+        <button class="btn btn-primary" hx-get="/api/projects/form" hx-target="#modal-container" hx-swap="innerHTML">
+            Create Project
+        </button>
+    </div>
+    {% endfor %}
+</div>
+<style>
+    .project-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary-color);
+    }
+</style>

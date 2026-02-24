@@ -1,0 +1,46 @@
+{% for column in columns %}
+<div class="column" data-column-id="{{ column.id }}">
+    <div class="column-header">
+        <h3>{{ column.name }}</h3>
+        <div class="column-actions">
+            <!-- Add Task Button -->
+            <button class="btn btn-sm btn-ghost" hx-get="/api/columns/{{ column.id }}/tasks/form"
+                hx-target="#modal-container" hx-swap="innerHTML" title="Add Task">
+                + Add
+            </button>
+            <!-- Delete Column Button -->
+            <button class="btn btn-sm btn-danger" hx-delete="/api/columns/{{ column.id }}"
+                hx-confirm="Are you sure you want to delete this column and all its tasks?" title="Delete Column">
+                &times;
+            </button>
+        </div>
+    </div>
+
+    <div class="column-body">
+        {% for task in column.tasks.all %}
+        <div class="task-card" data-task-id="{{ task.id }}">
+            <div class="task-title">{{ task.title }}</div>
+            {% if task.description %}
+            <div class="task-desc">{{ task.description }}</div>
+            {% endif %}
+            <div class="task-actions">
+                <button class="btn btn-sm btn-danger" style="padding: 0.1rem 0.3rem;"
+                    hx-delete="/api/tasks/{{ task.id }}" hx-confirm="Delete this task?" title="Delete Task">
+                    &times;
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <!-- Empty placeholder to ensure SortableJS works with empty lists -->
+        <div style="height: 10px; width: 100%;"></div>
+        {% endfor %}
+    </div>
+
+    <div class="column-footer">
+        <button class="btn btn-sm btn-ghost" style="width: 100%" hx-get="/api/columns/{{ column.id }}/tasks/form"
+            hx-target="#modal-container" hx-swap="innerHTML">
+            + Add a card
+        </button>
+    </div>
+</div>
+{% endfor %}

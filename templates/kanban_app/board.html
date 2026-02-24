@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ project.name }} - KanbanFlow{% endblock %}
+
+{% block header_actions %}
+<button class="btn btn-primary" hx-get="/api/boards/{{ board.id }}/columns/form" hx-target="#modal-container"
+    hx-swap="innerHTML">
+    + New Column
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="board-header">
+    <h2>{{ board.name }}</h2>
+</div>
+
+<!-- Board Canvas -->
+<div class="board-canvas" id="board-canvas" hx-get="/api/boards/{{ board.id }}/columns"
+    hx-trigger="load, columnUpdated from:body" hx-swap="innerHTML">
+    <!-- Columns will be loaded via HTMX -->
+    <div class="loading-spinner">Loading columns...</div>
+</div>
+
+{% endblock %}
