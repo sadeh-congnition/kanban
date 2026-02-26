@@ -1,13 +1,13 @@
 // Main Javascript file
 
 // Initialize SortableJS when HTMX loads content
-document.body.addEventListener('htmx:afterSwap', function(evt) {
+document.body.addEventListener('htmx:afterSwap', function (evt) {
     if (evt.detail.target.id === 'board-canvas') {
         initDragAndDrop();
     }
 });
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Check if board-canvas is in DOM initially (might be loaded later by htmx, but just in case)
     const board = document.getElementById('board-canvas');
     if (board && board.children.length > 0) {
@@ -29,10 +29,10 @@ function initDragAndDrop() {
                 const itemEl = evt.item;
                 const columnId = itemEl.dataset.columnId;
                 const newIndex = evt.newIndex;
-                
+
                 if (evt.oldIndex !== evt.newIndex) {
                     // Make API call to reorder column using HTMX ajax or fetch
-                    htmx.ajax('PATCH', `/api/columns/${columnId}/move`, {
+                    htmx.ajax('POST', `/api/columns/${columnId}/move`, {
                         values: { new_order: newIndex },
                         swap: 'none'
                     });
@@ -53,7 +53,7 @@ function initDragAndDrop() {
                 const itemEl = evt.item;
                 const taskId = itemEl.dataset.taskId;
                 const toList = evt.to;
-                
+
                 const newColumnId = toList.closest('.column').dataset.columnId;
                 const newIndex = evt.newIndex;
                 const oldIndex = evt.oldIndex;
@@ -61,10 +61,10 @@ function initDragAndDrop() {
 
                 if (oldIndex !== newIndex || oldColumnId !== newColumnId) {
                     // Make API call to move task
-                    htmx.ajax('PATCH', `/api/tasks/${taskId}/move`, {
-                        values: { 
+                    htmx.ajax('POST', `/api/tasks/${taskId}/move`, {
+                        values: {
                             new_column_id: newColumnId,
-                            new_order: newIndex 
+                            new_order: newIndex
                         },
                         swap: 'none'
                     });
@@ -83,6 +83,6 @@ function closeModal() {
 }
 
 // Listen for custom event to close modal after successful submission
-document.body.addEventListener('closeModal', function() {
+document.body.addEventListener('closeModal', function () {
     closeModal();
 });

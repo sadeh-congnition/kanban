@@ -87,7 +87,7 @@ def delete_column(request, column_id: int):
 class MoveColumnSchema(Schema):
     new_order: int
 
-@api.patch("/columns/{column_id}/move")
+@api.post("/columns/{column_id}/move")
 def move_column(request, column_id: int, data: Form[MoveColumnSchema]):
     """Moves a column to a new order"""
     column = get_object_or_404(Column, id=column_id)
@@ -151,7 +151,7 @@ class MoveTaskSchema(Schema):
     new_column_id: int
     new_order: int
 
-@api.patch("/tasks/{task_id}/move")
+@api.post("/tasks/{task_id}/move")
 def move_task(request, task_id: int, data: Form[MoveTaskSchema]):
     """Moves a task between columns or to a new order"""
     task = get_object_or_404(Task, id=task_id)
