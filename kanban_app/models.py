@@ -1,11 +1,26 @@
+from typing import Any
 from django.db import models
+from django.db.models.query import QuerySet
+
+class ActiveProjectManager(models.Manager):
+    def get_queryset(self) -> QuerySet:
+        return super().get_queryset().filter(is_deleted=False)
 
 class Project(models.Model):
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
 
-    def __str__(self):
+    objects = ActiveProjectManager()
+    all_objects = models.Manager()
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        self.is_deleted = True
+        self.save()
+        return (1, {self._meta.label: 1})
+
+    def __str__(self) -> str:
         return self.name
 
 class Board(models.Model):

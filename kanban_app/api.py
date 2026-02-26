@@ -29,6 +29,17 @@ def get_projects_list(request):
     projects = Project.objects.all()
     return render(request, "kanban_app/partials/projects.html", {"projects": projects})
 
+@api.delete("/projects/{project_id}")
+def delete_project(request, project_id: int):
+    """Deletes a project"""
+    project = get_object_or_404(Project, id=project_id)
+    project.delete()
+    
+    response = HttpResponse()
+    # Trigger HTMX to reload the projects list
+    response['HX-Trigger'] = 'projectListUpdated'
+    return response
+
 # --- Column Endpoints ---
 
 @api.get("/boards/{board_id}/columns")
