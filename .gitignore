@@ -1,1 +1,3 @@
 *.pyc
+__pycache__
+kanban_app/migrations/__pycache__

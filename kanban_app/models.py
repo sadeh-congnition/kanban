@@ -89,3 +89,27 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class TaskStatusHistory(models.Model):
+    task = models.ForeignKey(
+        Task,
+        related_name='status_history',
+        on_delete=models.CASCADE)
+    old_column = models.ForeignKey(
+        Column,
+        related_name='+',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True)
+    new_column = models.ForeignKey(
+        Column,
+        related_name='+',
+        on_delete=models.CASCADE)
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-changed_at']
+
+    def __str__(self):
+        return f"{self.task.title} moved to {self.new_column.name} at {self.changed_at}"

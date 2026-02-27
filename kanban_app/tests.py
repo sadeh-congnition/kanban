@@ -5,20 +5,18 @@ from kanban_app.models import Project, Board, Column, Task, Tag
 class TaskMoveTest(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="Test Project")
-        self.board = Board.objects.create(
-            project=self.project, name="Test Board")
-        self.col1 = Column.objects.create(
-            board=self.board, name="To Do", order=0)
-        self.col2 = Column.objects.create(
-            board=self.board, name="In Progress", order=1)
-        self.task1 = Task.objects.create(
-            column=self.col1, title="Task 1", order=0)
+        self.board = Board.objects.create(project=self.project, name="Test Board")
+        self.col1 = Column.objects.create(board=self.board, name="To Do", order=0)
+        self.col2 = Column.objects.create(board=self.board, name="In Progress", order=1)
+        self.task1 = Task.objects.create(column=self.col1, title="Task 1", order=0)
 
     def test_move_task_different_column(self):
         c = Client()
         # Simulate HTMX POST request
-        response = c.post(f"/api/tasks/{self.task1.id}/move",
-                          {"new_column_id": self.col2.id, "new_order": 0})
+        response = c.post(
+            f"/api/tasks/{self.task1.id}/move",
+            {"new_column_id": self.col2.id, "new_order": 0},
+        )
         if response.status_code != 204:
             print("Validation error:", response.content)
         self.assertEqual(response.status_code, 204)
@@ -31,12 +29,16 @@ class TaskMoveTest(TestCase):
         c = Client()
         # Create first task for project
         response = c.post(
-            f"/api/columns/{self.col1.id}/tasks", {"title": "Task 1", "description": "test"})
+            f"/api/columns/{self.col1.id}/tasks",
+            {"title": "Task 1", "description": "test"},
+        )
         self.assertEqual(response.status_code, 200)
 
         # Create second task for project
         response = c.post(
-            f"/api/columns/{self.col1.id}/tasks", {"title": "Task 2", "description": "test"})
+            f"/api/columns/{self.col1.id}/tasks",
+            {"title": "Task 2", "description": "test"},
+        )
         self.assertEqual(response.status_code, 200)
 
         # Create another project to check isolation
@@ -45,11 +47,14 @@ class TaskMoveTest(TestCase):
         c2 = Column.objects.create(board=b2, name="To Do", order=0)
 
         response = c.post(
-            f"/api/columns/{c2.id}/tasks", {"title": "Task 1 for P2", "description": "test"})
+            f"/api/columns/{c2.id}/tasks",
+            {"title": "Task 1 for P2", "description": "test"},
+        )
         self.assertEqual(response.status_code, 200)
 
-        tasks_p1 = Task.objects.filter(
-            column__board__project=self.project).order_by('id')
+        tasks_p1 = Task.objects.filter(column__board__project=self.project).order_by(
+            "id"
+        )
         self.assertEqual(tasks_p1.count(), 3)  # self.task1 + two new
 
         # Note: self.task1 doesn't have a project_task_id yet because it was
@@ -66,26 +71,16 @@ class TaskMoveTest(TestCase):
 class TagTest(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="Tag Project")
-        self.board = Board.objects.create(
-            project=self.project, name="Tag Board")
-        self.col = Column.objects.create(
-            board=self.board, name="To Do", order=0)
+        self.board = Board.objects.create(project=self.project, name="Tag Board")
+        self.col = Column.objects.create(board=self.board, name="To Do", order=0)
 
     def test_tag_creation_and_assignment(self):
-        tag1 = Tag.objects.create(
-            project=self.project,
-            name="Bug",
-            color="#ff0000")
-        tag2 = Tag.objects.create(
-            project=self.project,
-            name="Feature",
-            color="#00ff00")
+        tag1 = Tag.objects.create(project=self.project, name="Bug", color="#ff0000")
+        tag2 = Tag.objects.create(project=self.project, name="Feature", color="#00ff00")
 
         task = Task.objects.create(
-            column=self.col,
-            title="Fix login",
-            order=0,
-            project_task_id=1)
+            column=self.col, title="Fix login", order=0, project_task_id=1
+        )
         task.tags.set([tag1, tag2])
 
         task.refresh_from_db()
@@ -96,7 +91,9 @@ class TagTest(TestCase):
     def test_api_create_tag(self):
         c = Client()
         response = c.post(
-            f"/api/projects/{self.project.id}/tags", {"name": "Urgent", "color": "#ff0000"})
+            f"/api/projects/{self.project.id}/tags",
+            {"name": "Urgent", "color": "#ff0000"},
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Tag.objects.filter(project=self.project).count(), 1)
         tag = Tag.objects.get(project=self.project)
@@ -105,9 +102,64 @@ class TagTest(TestCase):
     def test_api_create_task_with_tags(self):
         tag = Tag.objects.create(project=self.project, name="Backend")
         c = Client()
-        response = c.post(f"/api/columns/{self.col.id}/tasks",
-                          {"title": "API rework", "description": "", "tags": tag.id})
+        response = c.post(
+            f"/api/columns/{self.col.id}/tasks",
+            {"title": "API rework", "description": "", "tags": tag.id},
+        )
         self.assertEqual(response.status_code, 200)
         task = Task.objects.get(title="API rework")
         self.assertEqual(task.tags.count(), 1)
         self.assertEqual(task.tags.first(), tag)
+
+
+class TaskStatusHistoryTest(TestCase):
+    def setUp(self):
+        self.project = Project.objects.create(name="Status Project")
+        self.board = Board.objects.create(project=self.project, name="Status Board")
+        self.col1 = Column.objects.create(board=self.board, name="To Do", order=0)
+        self.col2 = Column.objects.create(board=self.board, name="In Progress", order=1)
+
+    def test_status_history_on_task_creation(self):
+        c = Client()
+        response = c.post(
+            f"/api/columns/{self.col1.id}/tasks",
+            {"title": "New Task", "description": "Testing status"},
+        )
+        self.assertEqual(response.status_code, 200)
+
+        task = Task.objects.get(title="New Task")
+
+        # Verify history was created
+        history = task.status_history.all()
+        self.assertEqual(history.count(), 1)
+        self.assertEqual(history[0].old_column, None)
+        self.assertEqual(history[0].new_column, self.col1)
+
+    def test_status_history_on_task_move(self):
+        # Create a task directly using ORM (mimics existing task)
+        task = Task.objects.create(column=self.col1, title="Moving Task", order=0)
+
+        c = Client()
+        response = c.post(
+            f"/api/tasks/{task.id}/move",
+            {"new_column_id": self.col2.id, "new_order": 0},
+        )
+        self.assertEqual(response.status_code, 204)
+
+        history = task.status_history.all()
+        self.assertEqual(history.count(), 1)
+        self.assertEqual(history[0].old_column, self.col1)
+        self.assertEqual(history[0].new_column, self.col2)
+
+    def test_no_status_history_on_same_column_move(self):
+        task = Task.objects.create(column=self.col1, title="Reordering Task", order=0)
+
+        c = Client()
+        response = c.post(
+            f"/api/tasks/{task.id}/move",
+            {"new_column_id": self.col1.id, "new_order": 1},
+        )
+        self.assertEqual(response.status_code, 204)
+
+        history = task.status_history.all()
+        self.assertEqual(history.count(), 0)

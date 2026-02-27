@@ -2,7 +2,7 @@ from ninja import NinjaAPI, Form, Schema
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
 from django.db import transaction
-from .models import Board, Column, Task, Project, Tag
+from .models import Board, Column, Task, Project, Tag, TaskStatusHistory
 
 api = NinjaAPI(title="Kanban API", description="API for HTMX Operations")
 
@@ -206,6 +206,11 @@ def create_task(request, column_id: int, data: Form[TaskFormSchema]):
             project_task_id=task_id
         )
 
+        TaskStatusHistory.objects.create(
+            task=task,
+            new_column=column
+        )
+
         if data.tags:
             task.tags.set(data.tags)
 
@@ -281,9 +286,16 @@ def move_task(request, task_id: int, data: Form[MoveTaskSchema]):
             t.order = idx
             t.save()
     else:
+        old_col = task.column
         # Change column
         task.column = new_col
         task.save()
+
+        TaskStatusHistory.objects.create(
+            task=task,
+            old_column=old_col,
+            new_column=new_col
+        )
 
         # Insert in new column
         tasks = list(new_col.tasks.exclude(id=task.id))
