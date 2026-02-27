@@ -6,7 +6,10 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "django>=6.0.2",
+    "django-click>=2.5.0",
     "django-ninja>=1.5.3",
+    "django-stubs>=5.2.9",
+    "rich>=14.3.3",
 ]
 
 [dependency-groups]
