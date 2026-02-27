@@ -1,27 +1,37 @@
 <div class="modal-overlay" onclick="if(event.target === this) closeModal()">
     <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header">
-            <h2 class="modal-title">{{ task.title }}</h2>
+        <form id="task-details-form" hx-post="/api/tasks/{{ task.id }}/update_details" hx-swap="none"></form>
+
+        <div class="modal-header" style="align-items: flex-start;">
+            <div style="flex: 1; margin-right: 1rem;">
+                <input form="task-details-form" type="text" name="title" value="{{ task.title }}"
+                    style="font-size: 1.5rem; font-weight: bold; color: white; border: 1px solid transparent; background: transparent; padding: 0.25rem 0.5rem; border-radius: 0.375rem; width: 100%; transition: all 0.2s;"
+                    onfocus="this.style.border='1px solid #d4d4d8'; this.style.backgroundColor='#ffffff'; this.style.color='#18181b';"
+                    onblur="this.style.border='1px solid transparent'; this.style.backgroundColor='transparent'; this.style.color='white';"
+                    oninput="document.getElementById('save-details-btn').style.display='block';" required>
+            </div>
             <button class="btn btn-ghost" onclick="closeModal()">&times;</button>
         </div>
 
-        <div style="margin-bottom: 1.5rem;">
+        <div style="margin-bottom: 1.5rem; padding-left: 0.5rem;">
             <p style="color: #52525b; font-size: 0.9rem; margin-top: 0;">#{{ task.project_task_id|default:task.id }} in
                 <strong>{{ task.column.name }}</strong>
             </p>
         </div>
 
-        <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap; padding-left: 0.5rem;">
 
             <div style="flex: 2; min-width: 300px;">
-                <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: #3f3f46;">Description</h3>
-                {% if task.description %}
-                <div
-                    style="padding: 1rem; border-radius: 0.5rem; color: white; font-size: 0.95rem; white-space: pre-wrap;">
-                    {{ task.description }}</div>
-                {% else %}
-                <p style="color: #a1a1aa; font-style: italic; font-size: 0.9rem;">No description provided.</p>
-                {% endif %}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h3 style="font-size: 1rem; margin: 0; color: #3f3f46;">Description</h3>
+                    <button type="submit" form="task-details-form" id="save-details-btn" class="btn btn-sm btn-primary"
+                        style="display: none;">Save Details</button>
+                </div>
+                <textarea form="task-details-form" name="description"
+                    style="width: 100%; min-height: 12rem; padding: 1rem; border-radius: 0.5rem; background-color: #3f3f46; color: white; border: 1px solid transparent; font-size: 0.95rem; font-family: inherit; resize: vertical; transition: border-color 0.2s;"
+                    onfocus="this.style.borderColor='#a1a1aa';" onblur="this.style.borderColor='transparent';"
+                    oninput="document.getElementById('save-details-btn').style.display='block';"
+                    placeholder="Add a more detailed description...">{{ task.description|default:"" }}</textarea>
             </div>
 
             <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 1.5rem;">

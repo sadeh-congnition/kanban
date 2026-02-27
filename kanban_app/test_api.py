@@ -207,3 +207,22 @@ def test_get_task_details_form(api_client):
     response = api_client.get(f"/api/tasks/{task.id}/details")
     assert response.status_code == 200
     assert b"My Task Details" in response.content
+
+
+@pytest.mark.django_db
+def test_update_task_details(api_client):
+    project = baker.make(Project)
+    board = baker.make(Board, project=project)
+    col = baker.make(Column, board=board)
+    task = baker.make(Task, column=col, title="Old Title", description="Old Description")
+
+    response = api_client.post(f"/api/tasks/{task.id}/update_details", {
+        "title": "New Title",
+        "description": "New Description"
+    })
+
+    assert response.status_code == 200
+    assert response.headers.get("HX-Trigger") == "columnUpdated"
+    task.refresh_from_db()
+    assert task.title == "New Title"
+    assert task.description == "New Description"

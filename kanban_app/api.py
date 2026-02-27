@@ -330,6 +330,25 @@ def get_task_details(request, task_id: int):
         "users": users
     })
 
+
+class TaskUpdateDetailsSchema(Schema):
+    title: str
+    description: str = ""
+
+
+@api.post("/tasks/{task_id}/update_details")
+def update_task_details(request, task_id: int, data: Form[TaskUpdateDetailsSchema]):
+    """Updates the details for a task"""
+    task = get_object_or_404(Task, id=task_id)
+    task.title = data.title
+    task.description = data.description
+    task.save()
+
+    response = HttpResponse()
+    # Trigger HTMX to reload the board
+    response['HX-Trigger'] = 'columnUpdated'
+    return response
+
 # --- Assignment Endpoints ---
 
 
