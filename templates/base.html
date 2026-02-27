@@ -35,6 +35,12 @@
                 </a>
             </div>
             <div class="header-actions">
+                {% if user.is_authenticated %}
+                <form action="{% url 'logout' %}" method="post" style="display: inline; margin-right: 1rem;">
+                    {% csrf_token %}
+                    <button type="submit" style="background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: var(--radius-sm); cursor: pointer; font-family: 'Inter', sans-serif;">Log Out</button>
+                </form>
+                {% endif %}
                 {% block header_actions %}{% endblock %}
             </div>
         </header>

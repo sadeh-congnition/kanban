@@ -114,8 +114,10 @@ def create_task(board: Board, project: Project):
         console.print("Available Tags:")
         for idx, tag in enumerate(tags, start=1):
             console.print(f"{idx}. {tag.name}")
-        
-        tag_choices = Prompt.ask("Enter tag numbers to assign (comma-separated), or leave blank", default="")
+
+        tag_choices = Prompt.ask(
+            "Enter tag numbers to assign (comma-separated), or leave blank",
+            default="")
         if tag_choices:
             for part in tag_choices.split(","):
                 part = part.strip()

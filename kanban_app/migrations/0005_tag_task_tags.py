@@ -14,15 +14,32 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Tag',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=50)),
-                ('color', models.CharField(default='#3b82f6', max_length=20)),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tags', to='kanban_app.project')),
+                ('id',
+                 models.BigAutoField(
+                     auto_created=True,
+                     primary_key=True,
+                     serialize=False,
+                     verbose_name='ID')),
+                ('name',
+                 models.CharField(
+                     max_length=50)),
+                ('color',
+                 models.CharField(
+                     default='#3b82f6',
+                     max_length=20)),
+                ('project',
+                 models.ForeignKey(
+                     on_delete=django.db.models.deletion.CASCADE,
+                     related_name='tags',
+                     to='kanban_app.project')),
             ],
         ),
         migrations.AddField(
             model_name='task',
             name='tags',
-            field=models.ManyToManyField(blank=True, related_name='tasks', to='kanban_app.tag'),
+            field=models.ManyToManyField(
+                blank=True,
+                related_name='tasks',
+                to='kanban_app.tag'),
         ),
     ]
