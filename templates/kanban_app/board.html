@@ -3,6 +3,10 @@
 {% block title %}{{ project.name }} - KanbanFlow{% endblock %}
 
 {% block header_actions %}
+<button class="btn btn-ghost" style="margin-right: 0.5rem;" hx-get="/api/projects/{{ project.id }}/tags"
+    hx-target="#modal-container" hx-swap="innerHTML">
+    Manage Tags
+</button>
 <button class="btn btn-primary" hx-get="/api/boards/{{ board.id }}/columns/form" hx-target="#modal-container"
     hx-swap="innerHTML">
     + New Column

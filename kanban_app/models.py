@@ -24,6 +24,14 @@ class Project(models.Model):
     def __str__(self) -> str:
         return self.name
 
+class Tag(models.Model):
+    project = models.ForeignKey(Project, related_name='tags', on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
+    color = models.CharField(max_length=20, default="#3b82f6")
+
+    def __str__(self):
+        return f"{self.project.name} - {self.name}"
+
 class Board(models.Model):
     project = models.OneToOneField(Project, related_name='board', on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=255)
@@ -50,6 +58,7 @@ class Task(models.Model):
     column = models.ForeignKey(Column, related_name='tasks', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    tags = models.ManyToManyField(Tag, related_name='tasks', blank=True)
     order = models.IntegerField(default=0)
     project_task_id = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

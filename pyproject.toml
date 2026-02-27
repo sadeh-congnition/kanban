@@ -14,6 +14,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "model-bakery>=1.23.3",
     "pytest>=9.0.2",
     "pytest-django>=4.12.0",
 ]

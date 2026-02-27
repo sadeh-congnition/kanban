@@ -2,7 +2,7 @@ from ninja import NinjaAPI, Form, Schema
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.db import transaction
-from .models import Board, Column, Task, Project
+from .models import Board, Column, Task, Project, Tag
 
 api = NinjaAPI(title="Kanban API", description="API for HTMX Operations")
 
@@ -39,6 +39,39 @@ def delete_project(request, project_id: int):
     response = HttpResponse()
     # Trigger HTMX to reload the projects list
     response['HX-Trigger'] = 'projectListUpdated'
+    return response
+
+# --- Tag Endpoints ---
+
+@api.get("/projects/{project_id}/tags")
+def get_project_tags(request, project_id: int):
+    """Returns the tags partial for a project"""
+    project = get_object_or_404(Project, id=project_id)
+    tags = project.tags.all()
+    return render(request, "kanban_app/partials/tags.html", {"project": project, "tags": tags})
+
+class TagFormSchema(Schema):
+    name: str
+    color: str = "#3b82f6"
+
+@api.post("/projects/{project_id}/tags")
+def create_tag(request, project_id: int, data: Form[TagFormSchema]):
+    """Creates a new tag for the project"""
+    project = get_object_or_404(Project, id=project_id)
+    Tag.objects.create(project=project, name=data.name, color=data.color)
+    
+    response = HttpResponse()
+    response['HX-Trigger'] = 'tagsUpdated'
+    return response
+
+@api.delete("/tags/{tag_id}")
+def delete_tag(request, tag_id: int):
+    """Deletes a tag"""
+    tag = get_object_or_404(Tag, id=tag_id)
+    tag.delete()
+    
+    response = HttpResponse()
+    response['HX-Trigger'] = 'tagsUpdated, columnUpdated'
     return response
 
 # --- Column Endpoints ---
@@ -111,11 +144,14 @@ def move_column(request, column_id: int, data: Form[MoveColumnSchema]):
 @api.get("/columns/{column_id}/tasks/form")
 def get_task_form(request, column_id: int):
     """Returns the form modal for creating a new task in a specific column"""
-    return render(request, "kanban_app/partials/task_form.html", {"column_id": column_id})
+    column = get_object_or_404(Column, id=column_id)
+    tags = column.board.project.tags.all()
+    return render(request, "kanban_app/partials/task_form.html", {"column_id": column_id, "tags": tags})
 
 class TaskFormSchema(Schema):
     title: str
     description: str = ""
+    tags: list[int] = []
 
 @api.post("/columns/{column_id}/tasks")
 def create_task(request, column_id: int, data: Form[TaskFormSchema]):
@@ -134,13 +170,16 @@ def create_task(request, column_id: int, data: Form[TaskFormSchema]):
         # Determine the project-specific ID
         task_id = project.next_task_id
         
-        Task.objects.create(
+        task = Task.objects.create(
             column=column, 
             title=data.title, 
             description=data.description, 
             order=order,
             project_task_id=task_id
         )
+        
+        if data.tags:
+            task.tags.set(data.tags)
         
         # Increment project counter
         project.next_task_id += 1
@@ -159,6 +198,34 @@ def delete_task(request, task_id: int):
     
     response = HttpResponse()
     response['HX-Trigger'] = 'columnUpdated'
+    return response
+
+@api.get("/tasks/{task_id}/tags/form")
+def get_task_tags_form(request, task_id: int):
+    """Returns the form modal for managing tags for a specific task"""
+    task = get_object_or_404(Task, id=task_id)
+    project = task.column.board.project
+    tags = project.tags.all()
+    # We need to pass the IDs of the currently assigned tags
+    task_tag_ids = list(task.tags.values_list('id', flat=True))
+    return render(request, "kanban_app/partials/task_tags_form.html", {
+        "task": task, 
+        "tags": tags,
+        "task_tag_ids": task_tag_ids
+    })
+
+class TaskTagsFormSchema(Schema):
+    tags: list[int] = []
+
+@api.post("/tasks/{task_id}/tags")
+def update_task_tags(request, task_id: int, data: Form[TaskTagsFormSchema]):
+    """Updates the tags for a task"""
+    task = get_object_or_404(Task, id=task_id)
+    task.tags.set(data.tags)
+    
+    response = HttpResponse()
+    # Trigger HTMX to reload the board and close the modal
+    response['HX-Trigger'] = 'columnUpdated, closeModal'
     return response
 
 class MoveTaskSchema(Schema):

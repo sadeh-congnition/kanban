@@ -23,6 +23,8 @@ function initDragAndDrop() {
             group: 'columns',
             animation: 150,
             handle: '.column-header', // drag by column header
+            filter: '.btn, button, input, textarea, a',
+            preventOnFilter: false,
             ghostClass: 'sortable-ghost',
             dragClass: 'sortable-drag',
             onEnd: function (evt) {
@@ -47,6 +49,8 @@ function initDragAndDrop() {
         new Sortable(col, {
             group: 'tasks',
             animation: 150,
+            filter: '.btn, button, input, textarea, a',
+            preventOnFilter: false,
             ghostClass: 'sortable-ghost',
             dragClass: 'sortable-drag',
             onEnd: function (evt) {

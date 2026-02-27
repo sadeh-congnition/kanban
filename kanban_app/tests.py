@@ -1,5 +1,5 @@
 from django.test import TestCase, Client
-from kanban_app.models import Project, Board, Column, Task
+from kanban_app.models import Project, Board, Column, Task, Tag
 
 class TaskMoveTest(TestCase):
     def setUp(self):
@@ -50,3 +50,38 @@ class TaskMoveTest(TestCase):
         
         task_p2 = Task.objects.get(column__board__project=p2)
         self.assertEqual(task_p2.project_task_id, 1)
+
+class TagTest(TestCase):
+    def setUp(self):
+        self.project = Project.objects.create(name="Tag Project")
+        self.board = Board.objects.create(project=self.project, name="Tag Board")
+        self.col = Column.objects.create(board=self.board, name="To Do", order=0)
+
+    def test_tag_creation_and_assignment(self):
+        tag1 = Tag.objects.create(project=self.project, name="Bug", color="#ff0000")
+        tag2 = Tag.objects.create(project=self.project, name="Feature", color="#00ff00")
+        
+        task = Task.objects.create(column=self.col, title="Fix login", order=0, project_task_id=1)
+        task.tags.set([tag1, tag2])
+        
+        task.refresh_from_db()
+        self.assertEqual(task.tags.count(), 2)
+        self.assertIn(tag1, task.tags.all())
+        self.assertIn(tag2, task.tags.all())
+
+    def test_api_create_tag(self):
+        c = Client()
+        response = c.post(f"/api/projects/{self.project.id}/tags", {"name": "Urgent", "color": "#ff0000"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Tag.objects.filter(project=self.project).count(), 1)
+        tag = Tag.objects.get(project=self.project)
+        self.assertEqual(tag.name, "Urgent")
+        
+    def test_api_create_task_with_tags(self):
+        tag = Tag.objects.create(project=self.project, name="Backend")
+        c = Client()
+        response = c.post(f"/api/columns/{self.col.id}/tasks", {"title": "API rework", "description": "", "tags": tag.id})
+        self.assertEqual(response.status_code, 200)
+        task = Task.objects.get(title="API rework")
+        self.assertEqual(task.tags.count(), 1)
+        self.assertEqual(task.tags.first(), tag)

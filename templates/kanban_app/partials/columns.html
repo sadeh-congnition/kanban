@@ -19,12 +19,29 @@
     <div class="column-body">
         {% for task in column.tasks.all %}
         <div class="task-card" data-task-id="{{ task.id }}">
-            <div style="font-size: 0.75rem; color: #a1a1aa; margin-bottom: 0.25rem;">#{{task.project_task_id|default:task.id }}</div>
+            <div style="font-size: 0.75rem; color: #a1a1aa; margin-bottom: 0.25rem;">
+                #{{task.project_task_id|default:task.id }}</div>
             <div class="task-title">{{ task.title }}</div>
+            {% if task.tags.all %}
+            <div class="task-tags"
+                style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.3rem; margin-bottom: 0.3rem;">
+                {% for tag in task.tags.all %}
+                <span
+                    style="background-color: {{ tag.color }}; color: white; padding: 0.1rem 0.4rem; border-radius: 999px; font-size: 0.7rem; font-weight: 500;">
+                    {{ tag.name }}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
             {% if task.description %}
             <div class="task-desc">{{ task.description }}</div>
             {% endif %}
-            <div class="task-actions">
+            <div class="task-actions" style="display: flex; gap: 0.25rem;">
+                <button class="btn btn-sm btn-ghost" style="padding: 0.1rem 0.3rem;"
+                    hx-get="/api/tasks/{{ task.id }}/tags/form" hx-target="#modal-container" hx-swap="innerHTML"
+                    title="Edit Tags">
+                    Tags
+                </button>
                 <button class="btn btn-sm btn-danger" style="padding: 0.1rem 0.3rem;"
                     hx-delete="/api/tasks/{{ task.id }}" hx-confirm="Delete this task?" title="Delete Task">
                     &times;

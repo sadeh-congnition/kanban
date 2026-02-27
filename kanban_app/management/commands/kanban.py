@@ -83,8 +83,10 @@ def display_board(project: Project):
             tasks = column_tasks[col_idx]
             if row_idx < len(tasks):
                 task = tasks[row_idx]
+                tag_names = ", ".join(t.name for t in task.tags.all())
+                tags_str = f" [[yellow]{tag_names}[/yellow]]" if tag_names else ""
                 task_str = (
-                    f"[cyan]#{task.project_task_id}[/cyan]: {task.title}"
+                    f"[cyan]#{task.project_task_id}[/cyan]: {task.title}{tags_str}"
                 )
                 row_data.append(task_str)
             else:
@@ -106,6 +108,22 @@ def create_task(board: Board, project: Project):
     title = Prompt.ask("Enter task title")
     description = Prompt.ask("Enter task description (optional)", default="")
 
+    tags = list(project.tags.all())
+    selected_tags = []
+    if tags:
+        console.print("Available Tags:")
+        for idx, tag in enumerate(tags, start=1):
+            console.print(f"{idx}. {tag.name}")
+        
+        tag_choices = Prompt.ask("Enter tag numbers to assign (comma-separated), or leave blank", default="")
+        if tag_choices:
+            for part in tag_choices.split(","):
+                part = part.strip()
+                if part.isdigit():
+                    t_idx = int(part)
+                    if 1 <= t_idx <= len(tags):
+                        selected_tags.append(tags[t_idx - 1])
+
     console.print("Available Columns:")
     for idx, col in enumerate(columns, start=1):
         console.print(f"{idx}. {col.name}")
@@ -122,7 +140,7 @@ def create_task(board: Board, project: Project):
     project.next_task_id += 1
     project.save(update_fields=["next_task_id"])
 
-    Task.objects.create(
+    task = Task.objects.create(
         column=selected_column,
         title=title,
         description=description,
@@ -130,6 +148,9 @@ def create_task(board: Board, project: Project):
         # Put it at the end of the column
         order=selected_column.tasks.count(),
     )
+    if selected_tags:
+        task.tags.set(selected_tags)
+
     console.print(f"[green]Task '{title}' created successfully![/green]")
 
 
