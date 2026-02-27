@@ -19,7 +19,7 @@
     <div class="column-body">
         {% for task in column.tasks.all %}
         <div class="task-card" data-task-id="{{ task.id }}">
-            <div style="font-size: 0.75rem; color: #a1a1aa; margin-bottom: 0.25rem;">#{{ task.id }}</div>
+            <div style="font-size: 0.75rem; color: #a1a1aa; margin-bottom: 0.25rem;">#{{task.project_task_id|default:task.id }}</div>
             <div class="task-title">{{ task.title }}</div>
             {% if task.description %}
             <div class="task-desc">{{ task.description }}</div>

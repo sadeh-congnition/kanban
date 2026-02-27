@@ -20,3 +20,33 @@ class TaskMoveTest(TestCase):
         # Verify db update
         self.task1.refresh_from_db()
         self.assertEqual(self.task1.column_id, self.col2.id)
+
+    def test_project_task_id_assignment(self):
+        c = Client()
+        # Create first task for project
+        response = c.post(f"/api/columns/{self.col1.id}/tasks", {"title": "Task 1", "description": "test"})
+        self.assertEqual(response.status_code, 200)
+        
+        # Create second task for project
+        response = c.post(f"/api/columns/{self.col1.id}/tasks", {"title": "Task 2", "description": "test"})
+        self.assertEqual(response.status_code, 200)
+        
+        # Create another project to check isolation
+        p2 = Project.objects.create(name="Project 2")
+        b2 = Board.objects.create(project=p2, name="Board 2")
+        c2 = Column.objects.create(board=b2, name="To Do", order=0)
+        
+        response = c.post(f"/api/columns/{c2.id}/tasks", {"title": "Task 1 for P2", "description": "test"})
+        self.assertEqual(response.status_code, 200)
+
+        tasks_p1 = Task.objects.filter(column__board__project=self.project).order_by('id')
+        self.assertEqual(tasks_p1.count(), 3) # self.task1 + two new
+        
+        # Note: self.task1 doesn't have a project_task_id yet because it was created via ORM without setting it
+        new_task_1 = tasks_p1[1]
+        new_task_2 = tasks_p1[2]
+        self.assertEqual(new_task_1.project_task_id, 1)
+        self.assertEqual(new_task_2.project_task_id, 2)
+        
+        task_p2 = Task.objects.get(column__board__project=p2)
+        self.assertEqual(task_p2.project_task_id, 1)

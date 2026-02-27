@@ -11,6 +11,7 @@ class Project(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
+    next_task_id = models.IntegerField(default=1)
 
     objects = ActiveProjectManager()
     all_objects = models.Manager()
@@ -50,6 +51,7 @@ class Task(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     order = models.IntegerField(default=0)
+    project_task_id = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

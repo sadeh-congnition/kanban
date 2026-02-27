@@ -1,6 +1,7 @@
 from ninja import NinjaAPI, Form, Schema
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseNotAllowed
+from django.db import transaction
 from .models import Board, Column, Task, Project
 
 api = NinjaAPI(title="Kanban API", description="API for HTMX Operations")
@@ -121,16 +122,29 @@ def create_task(request, column_id: int, data: Form[TaskFormSchema]):
     """Creates a new task in the given column"""
     column = get_object_or_404(Column, id=column_id)
     
-    # Get highest order
-    last_task = column.tasks.last()
-    order = (last_task.order + 1) if last_task else 0
-    
-    Task.objects.create(
-        column=column, 
-        title=data.title, 
-        description=data.description, 
-        order=order
-    )
+    # Wrap in transaction to safely generate sequential ID
+    with transaction.atomic():
+        # Get the project for this column's board, locking the row to prevent race conditions
+        project = Project.objects.select_for_update().get(board=column.board)
+        
+        # Get highest order
+        last_task = column.tasks.last()
+        order = (last_task.order + 1) if last_task else 0
+        
+        # Determine the project-specific ID
+        task_id = project.next_task_id
+        
+        Task.objects.create(
+            column=column, 
+            title=data.title, 
+            description=data.description, 
+            order=order,
+            project_task_id=task_id
+        )
+        
+        # Increment project counter
+        project.next_task_id += 1
+        project.save()
     
     response = HttpResponse()
     # Trigger HTMX to reload the board
