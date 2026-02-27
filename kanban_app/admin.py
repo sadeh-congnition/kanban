@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Board, Column, Task, Project, Tag, TaskStatusHistory
+from .models import Board, Column, Task, Project, Tag, TaskStatusHistory, TaskAssignmentHistory
 
 
 @admin.register(Project)
@@ -27,6 +27,7 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'title',
+        'assigned_to',
         'column',
         'order',
         'get_tags',
@@ -55,3 +56,10 @@ class TaskStatusHistoryAdmin(admin.ModelAdmin):
     list_display = ('id', 'task', 'old_column', 'new_column', 'changed_at')
     list_filter = ('new_column', 'old_column')
     search_fields = ('task__title',)
+
+
+@admin.register(TaskAssignmentHistory)
+class TaskAssignmentHistoryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'task', 'old_assignee', 'new_assignee', 'changed_at')
+    list_filter = ('changed_at',)
+    search_fields = ('task__title', 'old_assignee__username', 'new_assignee__username')

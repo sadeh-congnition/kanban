@@ -1,7 +1,10 @@
 import pytest
 from django.test import Client
 from model_bakery import baker
-from kanban_app.models import Project, Board, Column, Task, Tag
+from kanban_app.models import Project, Board, Column, Task, Tag, TaskAssignmentHistory
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 @pytest.fixture
@@ -160,3 +163,36 @@ def test_update_task_tags(api_client):
     assert response.status_code == 200
     assert response.headers.get("HX-Trigger") == "columnUpdated, closeModal"
     assert task.tags.count() == 2
+
+
+@pytest.mark.django_db
+def test_task_assignment(api_client):
+    project = baker.make(Project)
+    board = baker.make(Board, project=project)
+    col = baker.make(Column, board=board, order=0)
+    task = baker.make(Task, column=col, order=0)
+    user1 = baker.make(User)
+    user2 = baker.make(User)
+
+    # Assign to user1
+    response = api_client.post(
+        f"/api/tasks/{task.id}/assign", {"user_id": str(user1.id)})
+    assert response.status_code == 200
+    task.refresh_from_db()
+    assert task.assigned_to == user1
+    assert TaskAssignmentHistory.objects.filter(task=task, old_assignee=None, new_assignee=user1).exists()
+
+    # Re-assign to user2
+    response = api_client.post(
+        f"/api/tasks/{task.id}/assign", {"user_id": str(user2.id)})
+    assert response.status_code == 200
+    task.refresh_from_db()
+    assert task.assigned_to == user2
+    assert TaskAssignmentHistory.objects.filter(task=task, old_assignee=user1, new_assignee=user2).exists()
+
+    # Unassign
+    response = api_client.post(f"/api/tasks/{task.id}/assign", {})
+    assert response.status_code == 200
+    task.refresh_from_db()
+    assert task.assigned_to is None
+    assert TaskAssignmentHistory.objects.filter(task=task, old_assignee=user2, new_assignee=None).exists()

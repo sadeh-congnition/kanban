@@ -1,6 +1,9 @@
 from typing import Any
 from django.db import models
 from django.db.models.query import QuerySet
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class ActiveProjectManager(models.Manager):
@@ -79,6 +82,13 @@ class Task(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     tags = models.ManyToManyField(Tag, related_name='tasks', blank=True)
+    assigned_to = models.ForeignKey(
+        User,
+        related_name='assigned_tasks',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
     order = models.IntegerField(default=0)
     project_task_id = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -113,3 +123,29 @@ class TaskStatusHistory(models.Model):
 
     def __str__(self):
         return f"{self.task.title} moved to {self.new_column.name} at {self.changed_at}"
+
+
+class TaskAssignmentHistory(models.Model):
+    task = models.ForeignKey(
+        Task,
+        related_name='assignment_history',
+        on_delete=models.CASCADE)
+    old_assignee = models.ForeignKey(
+        User,
+        related_name='+',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True)
+    new_assignee = models.ForeignKey(
+        User,
+        related_name='+',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True)
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-changed_at']
+
+    def __str__(self):
+        return f"{self.task.title} assigned from {self.old_assignee} to {self.new_assignee} at {self.changed_at}"

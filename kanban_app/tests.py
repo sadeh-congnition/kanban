@@ -1,5 +1,8 @@
 from django.test import TestCase, Client
 from kanban_app.models import Project, Board, Column, Task, Tag
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class TaskMoveTest(TestCase):
@@ -8,7 +11,8 @@ class TaskMoveTest(TestCase):
         self.board = Board.objects.create(project=self.project, name="Test Board")
         self.col1 = Column.objects.create(board=self.board, name="To Do", order=0)
         self.col2 = Column.objects.create(board=self.board, name="In Progress", order=1)
-        self.task1 = Task.objects.create(column=self.col1, title="Task 1", order=0)
+        self.user = User.objects.create(username="testuser")
+        self.task1 = Task.objects.create(column=self.col1, title="Task 1", order=0, assigned_to=self.user)
 
     def test_move_task_different_column(self):
         c = Client()
@@ -24,6 +28,16 @@ class TaskMoveTest(TestCase):
         # Verify db update
         self.task1.refresh_from_db()
         self.assertEqual(self.task1.column_id, self.col2.id)
+
+    def test_move_unassigned_task_different_column_fails(self):
+        task_unassigned = Task.objects.create(column=self.col1, title="Unassigned", order=1)
+        c = Client()
+        response = c.post(
+            f"/api/tasks/{task_unassigned.id}/move",
+            {"new_column_id": self.col2.id, "new_order": 1},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b"Unassigned tasks cannot change status", response.content)
 
     def test_project_task_id_assignment(self):
         c = Client()
@@ -136,8 +150,9 @@ class TaskStatusHistoryTest(TestCase):
         self.assertEqual(history[0].new_column, self.col1)
 
     def test_status_history_on_task_move(self):
+        user = User.objects.create(username="histuser")
         # Create a task directly using ORM (mimics existing task)
-        task = Task.objects.create(column=self.col1, title="Moving Task", order=0)
+        task = Task.objects.create(column=self.col1, title="Moving Task", order=0, assigned_to=user)
 
         c = Client()
         response = c.post(
@@ -152,6 +167,7 @@ class TaskStatusHistoryTest(TestCase):
         self.assertEqual(history[0].new_column, self.col2)
 
     def test_no_status_history_on_same_column_move(self):
+        # Even unassigned task can change order in the same column
         task = Task.objects.create(column=self.col1, title="Reordering Task", order=0)
 
         c = Client()
@@ -163,3 +179,35 @@ class TaskStatusHistoryTest(TestCase):
 
         history = task.status_history.all()
         self.assertEqual(history.count(), 0)
+
+
+class TaskAssignmentTest(TestCase):
+    def setUp(self):
+        self.project = Project.objects.create(name="Assign Project")
+        self.board = Board.objects.create(project=self.project, name="Assign Board")
+        self.col = Column.objects.create(board=self.board, name="To Do")
+        self.task = Task.objects.create(column=self.col, title="Assign Task")
+        self.user = User.objects.create(username="assignuser")
+
+    def test_api_assign_task(self):
+        c = Client()
+        response = c.post(
+            f"/api/tasks/{self.task.id}/assign",
+            {"user_id": self.user.id},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.assigned_to, self.user)
+
+    def test_api_unassign_task(self):
+        self.task.assigned_to = self.user
+        self.task.save()
+
+        c = Client()
+        response = c.post(
+            f"/api/tasks/{self.task.id}/assign",
+            {"user_id": ""},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertIsNone(self.task.assigned_to)

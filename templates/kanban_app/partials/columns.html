@@ -36,6 +36,23 @@
             {% if task.description %}
             <div class="task-desc">{{ task.description }}</div>
             {% endif %}
+            <div class="task-assignee" style="margin-bottom: 0.3rem;">
+                <button class="btn btn-sm btn-ghost"
+                    style="padding: 0.1rem 0.3rem; font-size: 0.75rem; color: #52525b; display: flex; align-items: center; gap: 0.2rem;"
+                    hx-get="/api/tasks/{{ task.id }}/assign/form" hx-target="#modal-container" hx-swap="innerHTML"
+                    title="Assign User">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    {% if task.assigned_to %}
+                    {{ task.assigned_to.username }}
+                    {% else %}
+                    Unassigned
+                    {% endif %}
+                </button>
+            </div>
             <div class="task-actions" style="display: flex; gap: 0.25rem;">
                 <button class="btn btn-sm btn-ghost" style="padding: 0.1rem 0.3rem;"
                     hx-get="/api/tasks/{{ task.id }}/tags/form" hx-target="#modal-container" hx-swap="innerHTML"

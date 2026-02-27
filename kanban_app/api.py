@@ -2,7 +2,10 @@ from ninja import NinjaAPI, Form, Schema
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
 from django.db import transaction
-from .models import Board, Column, Task, Project, Tag, TaskStatusHistory
+from django.contrib.auth import get_user_model
+from .models import Board, Column, Task, Project, Tag, TaskStatusHistory, TaskAssignmentHistory
+
+User = get_user_model()
 
 api = NinjaAPI(title="Kanban API", description="API for HTMX Operations")
 
@@ -288,6 +291,9 @@ def move_task(request, task_id: int, data: Form[MoveTaskSchema]):
     else:
         old_col = task.column
         # Change column
+        if task.assigned_to_id is None:
+            return HttpResponse("Unassigned tasks cannot change status.", status=400)
+
         task.column = new_col
         task.save()
 
@@ -305,3 +311,44 @@ def move_task(request, task_id: int, data: Form[MoveTaskSchema]):
             t.save()
 
     return HttpResponse(status=204)
+
+# --- Assignment Endpoints ---
+
+
+@api.get("/tasks/{task_id}/assign/form")
+def get_task_assign_form(request, task_id: int):
+    """Returns the form modal for assigning a user to a task"""
+    task = get_object_or_404(Task, id=task_id)
+    users = User.objects.all()
+    return render(request, "kanban_app/partials/task_assign_form.html", {
+        "task": task,
+        "users": users
+    })
+
+
+class TaskAssignFormSchema(Schema):
+    user_id: str | None = None
+
+
+@api.post("/tasks/{task_id}/assign")
+def assign_task(request, task_id: int, data: Form[TaskAssignFormSchema]):
+    """Assigns a task to a user"""
+    task = get_object_or_404(Task, id=task_id)
+
+    old_assignee_id = task.assigned_to_id
+    new_assignee_id = int(data.user_id) if data.user_id else None
+
+    if old_assignee_id != new_assignee_id:
+        task.assigned_to_id = new_assignee_id
+        task.save()
+
+        TaskAssignmentHistory.objects.create(
+            task=task,
+            old_assignee_id=old_assignee_id,
+            new_assignee_id=new_assignee_id
+        )
+
+    response = HttpResponse()
+    # Trigger HTMX to reload the board and close the modal
+    response['HX-Trigger'] = 'columnUpdated, closeModal'
+    return response
