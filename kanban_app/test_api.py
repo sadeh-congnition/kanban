@@ -196,3 +196,14 @@ def test_task_assignment(api_client):
     task.refresh_from_db()
     assert task.assigned_to is None
     assert TaskAssignmentHistory.objects.filter(task=task, old_assignee=user2, new_assignee=None).exists()
+
+
+@pytest.mark.django_db
+def test_get_task_details_form(api_client):
+    project = baker.make(Project)
+    board = baker.make(Board, project=project)
+    col = baker.make(Column, board=board)
+    task = baker.make(Task, column=col, title="My Task Details")
+    response = api_client.get(f"/api/tasks/{task.id}/details")
+    assert response.status_code == 200
+    assert b"My Task Details" in response.content

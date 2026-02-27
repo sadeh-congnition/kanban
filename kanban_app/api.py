@@ -312,6 +312,24 @@ def move_task(request, task_id: int, data: Form[MoveTaskSchema]):
 
     return HttpResponse(status=204)
 
+
+@api.get("/tasks/{task_id}/details")
+def get_task_details(request, task_id: int):
+    """Returns the details view for a task."""
+    task = get_object_or_404(Task, id=task_id)
+    project = task.column.board.project
+    tags = project.tags.all()
+    # We need to pass the IDs of the currently assigned tags
+    task_tag_ids = list(task.tags.values_list('id', flat=True))
+    users = User.objects.all()
+
+    return render(request, "kanban_app/partials/task_details.html", {
+        "task": task,
+        "tags": tags,
+        "task_tag_ids": task_tag_ids,
+        "users": users
+    })
+
 # --- Assignment Endpoints ---
 
 

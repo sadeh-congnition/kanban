@@ -2,7 +2,8 @@
 
 This is an app to replace the Github project/board features because they're hard and confusing to use. My goal is to use this app for tracking projects in Sadeh Cognition.
 
-A full-stack Kanban board application built using Django, django-ninja, and HTMX.
+All the tasks are tracked using Kanban which is hosted [here](https://github.com/sadeh-congnition/kanban).
+To see the board follow the instructions below. In short, you'll need to clone the repo and run it locally. The database is included in the repo and I'm keeping it up to date.
 
 ## Prerequisites
 
