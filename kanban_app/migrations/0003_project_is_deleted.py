@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('kanban_app', '0002_project_board_project'),
+        ("kanban_app", "0002_project_board_project"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='project',
-            name='is_deleted',
+            model_name="project",
+            name="is_deleted",
             field=models.BooleanField(default=False),
         ),
     ]

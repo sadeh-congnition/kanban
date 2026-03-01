@@ -45,24 +45,18 @@ def display_board(project: Project):
     try:
         board = project.board
     except Board.DoesNotExist:
-        console.print(
-            f"[yellow]No board found for project '{project.name}'.[/yellow]"
-        )
+        console.print(f"[yellow]No board found for project '{project.name}'.[/yellow]")
         return None
 
     if not board:
-        console.print(
-            f"[yellow]No board found for project '{project.name}'.[/yellow]"
-        )
+        console.print(f"[yellow]No board found for project '{project.name}'.[/yellow]")
         return None
 
     table = Table(title=f"Board: {board.name}")
     columns = list(board.columns.all())
 
     if not columns:
-        console.print(
-            f"[yellow]No columns found in board '{board.name}'.[/yellow]"
-        )
+        console.print(f"[yellow]No columns found in board '{board.name}'.[/yellow]")
         return board
 
     for column in columns:
@@ -100,9 +94,7 @@ def display_board(project: Project):
 def create_task(board: Board, project: Project):
     columns = list(board.columns.all())
     if not columns:
-        console.print(
-            "[red]Cannot create a task because there are no columns.[/red]"
-        )
+        console.print("[red]Cannot create a task because there are no columns.[/red]")
         return
 
     title = Prompt.ask("Enter task title")
@@ -116,8 +108,8 @@ def create_task(board: Board, project: Project):
             console.print(f"{idx}. {tag.name}")
 
         tag_choices = Prompt.ask(
-            "Enter tag numbers to assign (comma-separated), or leave blank",
-            default="")
+            "Enter tag numbers to assign (comma-separated), or leave blank", default=""
+        )
         if tag_choices:
             for part in tag_choices.split(","):
                 part = part.strip()
@@ -162,24 +154,16 @@ def change_task_status(board: Board):
         console.print("[red]No columns available.[/red]")
         return
 
-    project_task_id = IntPrompt.ask(
-        "Enter the Task ID (project local ID) to move"
-    )
+    project_task_id = IntPrompt.ask("Enter the Task ID (project local ID) to move")
 
     try:
         # Need to find the task by project_task_id within this board's columns
-        task = Task.objects.get(
-            column__board=board, project_task_id=project_task_id
-        )
+        task = Task.objects.get(column__board=board, project_task_id=project_task_id)
     except Task.DoesNotExist:
-        console.print(
-            f"[red]Task #{project_task_id} not found on this board.[/red]"
-        )
+        console.print(f"[red]Task #{project_task_id} not found on this board.[/red]")
         return
 
-    console.print(
-        f"Moving Task: [cyan]#{task.project_task_id}[/cyan]: {task.title}"
-    )
+    console.print(f"Moving Task: [cyan]#{task.project_task_id}[/cyan]: {task.title}")
     console.print(f"Current Column: [magenta]{task.column.name}[/magenta]")
 
     console.print("Available Columns:")

@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('kanban_app', '0003_project_is_deleted'),
+        ("kanban_app", "0003_project_is_deleted"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='project',
-            name='next_task_id',
+            model_name="project",
+            name="next_task_id",
             field=models.IntegerField(default=1),
         ),
         migrations.AddField(
-            model_name='task',
-            name='project_task_id',
+            model_name="task",
+            name="project_task_id",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]

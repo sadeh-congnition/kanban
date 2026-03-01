@@ -2,8 +2,18 @@ from ninja import NinjaAPI, Form, Schema
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
 from django.db import transaction
+import os
 from django.contrib.auth import get_user_model
-from .models import Board, Column, Task, Project, Tag, TaskStatusHistory, TaskAssignmentHistory
+from .models import (
+    Board,
+    Column,
+    Task,
+    Project,
+    Tag,
+    TaskStatusHistory,
+    TaskAssignmentHistory,
+)
+from .history_logger import log_task_change, get_history_file_path
 
 User = get_user_model()
 
@@ -27,7 +37,7 @@ def create_project(request, data: Form[ProjectFormSchema]):
     """Creates a new project"""
     Project.objects.create(name=data.name)
     response = HttpResponse()
-    response['HX-Trigger'] = 'projectListUpdated, closeModal'
+    response["HX-Trigger"] = "projectListUpdated, closeModal"
     return response
 
 
@@ -35,9 +45,7 @@ def create_project(request, data: Form[ProjectFormSchema]):
 def get_projects_list(request):
     """Returns the updated list of projects"""
     projects = Project.objects.all()
-    return render(request,
-                  "kanban_app/partials/projects.html",
-                  {"projects": projects})
+    return render(request, "kanban_app/partials/projects.html", {"projects": projects})
 
 
 @api.delete("/projects/{project_id}")
@@ -48,8 +56,9 @@ def delete_project(request, project_id: int):
 
     response = HttpResponse()
     # Trigger HTMX to reload the projects list
-    response['HX-Trigger'] = 'projectListUpdated'
+    response["HX-Trigger"] = "projectListUpdated"
     return response
+
 
 # --- Tag Endpoints ---
 
@@ -59,8 +68,9 @@ def get_project_tags(request, project_id: int):
     """Returns the tags partial for a project"""
     project = get_object_or_404(Project, id=project_id)
     tags = project.tags.all()
-    return render(request, "kanban_app/partials/tags.html",
-                  {"project": project, "tags": tags})
+    return render(
+        request, "kanban_app/partials/tags.html", {"project": project, "tags": tags}
+    )
 
 
 class TagFormSchema(Schema):
@@ -75,7 +85,7 @@ def create_tag(request, project_id: int, data: Form[TagFormSchema]):
     Tag.objects.create(project=project, name=data.name, color=data.color)
 
     response = HttpResponse()
-    response['HX-Trigger'] = 'tagsUpdated'
+    response["HX-Trigger"] = "tagsUpdated"
     return response
 
 
@@ -86,8 +96,9 @@ def delete_tag(request, tag_id: int):
     tag.delete()
 
     response = HttpResponse()
-    response['HX-Trigger'] = 'tagsUpdated, columnUpdated'
+    response["HX-Trigger"] = "tagsUpdated, columnUpdated"
     return response
+
 
 # --- Column Endpoints ---
 
@@ -97,17 +108,15 @@ def get_columns(request, board_id: int):
     """Returns the HTML for all columns in the board"""
     board = get_object_or_404(Board, id=board_id)
     columns = board.columns.all()
-    return render(request,
-                  "kanban_app/partials/columns.html",
-                  {"columns": columns})
+    return render(request, "kanban_app/partials/columns.html", {"columns": columns})
 
 
 @api.get("/boards/{board_id}/columns/form")
 def get_column_form(request, board_id: int):
     """Returns the form modal for creating a new column"""
-    return render(request,
-                  "kanban_app/partials/column_form.html",
-                  {"board_id": board_id})
+    return render(
+        request, "kanban_app/partials/column_form.html", {"board_id": board_id}
+    )
 
 
 class ColumnFormSchema(Schema):
@@ -127,7 +136,7 @@ def create_column(request, board_id: int, data: Form[ColumnFormSchema]):
 
     response = HttpResponse()
     # Trigger HTMX to reload the body, and close the modal
-    response['HX-Trigger'] = 'columnUpdated, closeModal'
+    response["HX-Trigger"] = "columnUpdated, closeModal"
     return response
 
 
@@ -139,7 +148,7 @@ def delete_column(request, column_id: int):
 
     response = HttpResponse()
     # Trigger HTMX to reload the body
-    response['HX-Trigger'] = 'columnUpdated'
+    response["HX-Trigger"] = "columnUpdated"
     return response
 
 
@@ -165,6 +174,7 @@ def move_column(request, column_id: int, data: Form[MoveColumnSchema]):
 
     return HttpResponse(status=204)  # No Content, Sortable handles UI
 
+
 # --- Task Endpoints ---
 
 
@@ -173,8 +183,11 @@ def get_task_form(request, column_id: int):
     """Returns the form modal for creating a new task in a specific column"""
     column = get_object_or_404(Column, id=column_id)
     tags = column.board.project.tags.all()
-    return render(request, "kanban_app/partials/task_form.html",
-                  {"column_id": column_id, "tags": tags})
+    return render(
+        request,
+        "kanban_app/partials/task_form.html",
+        {"column_id": column_id, "tags": tags},
+    )
 
 
 class TaskFormSchema(Schema):
@@ -206,12 +219,16 @@ def create_task(request, column_id: int, data: Form[TaskFormSchema]):
             title=data.title,
             description=data.description,
             order=order,
-            project_task_id=task_id
+            project_task_id=task_id,
         )
 
-        TaskStatusHistory.objects.create(
-            task=task,
-            new_column=column
+        TaskStatusHistory.objects.create(task=task, new_column=column)
+
+        log_task_change(
+            project.id,
+            request.user.username if request.user.is_authenticated else "System",
+            task.title,
+            f"Created in {column.name}",
         )
 
         if data.tags:
@@ -223,7 +240,7 @@ def create_task(request, column_id: int, data: Form[TaskFormSchema]):
 
     response = HttpResponse()
     # Trigger HTMX to reload the board
-    response['HX-Trigger'] = 'columnUpdated, closeModal'
+    response["HX-Trigger"] = "columnUpdated, closeModal"
     return response
 
 
@@ -231,10 +248,19 @@ def create_task(request, column_id: int, data: Form[TaskFormSchema]):
 def delete_task(request, task_id: int):
     """Deletes a task"""
     task = get_object_or_404(Task, id=task_id)
+    project_id = task.column.board.project_id
+    task_title = task.title
     task.delete()
 
+    log_task_change(
+        project_id,
+        request.user.username if request.user.is_authenticated else "System",
+        task_title,
+        "Deleted task",
+    )
+
     response = HttpResponse()
-    response['HX-Trigger'] = 'columnUpdated'
+    response["HX-Trigger"] = "columnUpdated"
     return response
 
 
@@ -245,12 +271,12 @@ def get_task_tags_form(request, task_id: int):
     project = task.column.board.project
     tags = project.tags.all()
     # We need to pass the IDs of the currently assigned tags
-    task_tag_ids = list(task.tags.values_list('id', flat=True))
-    return render(request, "kanban_app/partials/task_tags_form.html", {
-        "task": task,
-        "tags": tags,
-        "task_tag_ids": task_tag_ids
-    })
+    task_tag_ids = list(task.tags.values_list("id", flat=True))
+    return render(
+        request,
+        "kanban_app/partials/task_tags_form.html",
+        {"task": task, "tags": tags, "task_tag_ids": task_tag_ids},
+    )
 
 
 class TaskTagsFormSchema(Schema):
@@ -263,9 +289,16 @@ def update_task_tags(request, task_id: int, data: Form[TaskTagsFormSchema]):
     task = get_object_or_404(Task, id=task_id)
     task.tags.set(data.tags)
 
+    log_task_change(
+        task.column.board.project_id,
+        request.user.username if request.user.is_authenticated else "System",
+        task.title,
+        "Tags updated",
+    )
+
     response = HttpResponse()
     # Trigger HTMX to reload the board and close the modal
-    response['HX-Trigger'] = 'columnUpdated, closeModal'
+    response["HX-Trigger"] = "columnUpdated, closeModal"
     return response
 
 
@@ -298,9 +331,14 @@ def move_task(request, task_id: int, data: Form[MoveTaskSchema]):
         task.save()
 
         TaskStatusHistory.objects.create(
-            task=task,
-            old_column=old_col,
-            new_column=new_col
+            task=task, old_column=old_col, new_column=new_col
+        )
+
+        log_task_change(
+            old_col.board.project_id,
+            request.user.username if request.user.is_authenticated else "System",
+            task.title,
+            f"Moved from {old_col.name} to {new_col.name}",
         )
 
         # Insert in new column
@@ -320,34 +358,44 @@ def get_task_details(request, task_id: int):
     project = task.column.board.project
     tags = project.tags.all()
     # We need to pass the IDs of the currently assigned tags
-    task_tag_ids = list(task.tags.values_list('id', flat=True))
+    task_tag_ids = list(task.tags.values_list("id", flat=True))
     users = User.objects.all()
 
     # Build combined chronological change history
     history: list[dict] = []
-    for entry in task.status_history.select_related('old_column', 'new_column').all():
-        history.append({
-            'type': 'status',
-            'changed_at': entry.changed_at,
-            'old_column': entry.old_column,
-            'new_column': entry.new_column,
-        })
-    for entry in task.assignment_history.select_related('old_assignee', 'new_assignee').all():
-        history.append({
-            'type': 'assignment',
-            'changed_at': entry.changed_at,
-            'old_assignee': entry.old_assignee,
-            'new_assignee': entry.new_assignee,
-        })
-    history.sort(key=lambda x: x['changed_at'])
+    for entry in task.status_history.select_related("old_column", "new_column").all():
+        history.append(
+            {
+                "type": "status",
+                "changed_at": entry.changed_at,
+                "old_column": entry.old_column,
+                "new_column": entry.new_column,
+            }
+        )
+    for entry in task.assignment_history.select_related(
+        "old_assignee", "new_assignee"
+    ).all():
+        history.append(
+            {
+                "type": "assignment",
+                "changed_at": entry.changed_at,
+                "old_assignee": entry.old_assignee,
+                "new_assignee": entry.new_assignee,
+            }
+        )
+    history.sort(key=lambda x: x["changed_at"])
 
-    return render(request, "kanban_app/partials/task_details.html", {
-        "task": task,
-        "tags": tags,
-        "task_tag_ids": task_tag_ids,
-        "users": users,
-        "history": history,
-    })
+    return render(
+        request,
+        "kanban_app/partials/task_details.html",
+        {
+            "task": task,
+            "tags": tags,
+            "task_tag_ids": task_tag_ids,
+            "users": users,
+            "history": history,
+        },
+    )
 
 
 class TaskUpdateDetailsSchema(Schema):
@@ -359,14 +407,25 @@ class TaskUpdateDetailsSchema(Schema):
 def update_task_details(request, task_id: int, data: Form[TaskUpdateDetailsSchema]):
     """Updates the details for a task"""
     task = get_object_or_404(Task, id=task_id)
+    old_title = task.title
     task.title = data.title
     task.description = data.description
     task.save()
 
+    log_task_change(
+        task.column.board.project_id,
+        request.user.username if request.user.is_authenticated else "System",
+        old_title,
+        f"Updated details (new title: {task.title})"
+        if old_title != task.title
+        else "Updated details",
+    )
+
     response = HttpResponse()
     # Trigger HTMX to reload the board
-    response['HX-Trigger'] = 'columnUpdated'
+    response["HX-Trigger"] = "columnUpdated"
     return response
+
 
 # --- Assignment Endpoints ---
 
@@ -376,10 +435,11 @@ def get_task_assign_form(request, task_id: int):
     """Returns the form modal for assigning a user to a task"""
     task = get_object_or_404(Task, id=task_id)
     users = User.objects.all()
-    return render(request, "kanban_app/partials/task_assign_form.html", {
-        "task": task,
-        "users": users
-    })
+    return render(
+        request,
+        "kanban_app/partials/task_assign_form.html",
+        {"task": task, "users": users},
+    )
 
 
 class TaskAssignFormSchema(Schema):
@@ -399,12 +459,33 @@ def assign_task(request, task_id: int, data: Form[TaskAssignFormSchema]):
         task.save()
 
         TaskAssignmentHistory.objects.create(
-            task=task,
-            old_assignee_id=old_assignee_id,
-            new_assignee_id=new_assignee_id
+            task=task, old_assignee_id=old_assignee_id, new_assignee_id=new_assignee_id
+        )
+
+        assignee_name = task.assigned_to.username if task.assigned_to else "Unassigned"
+        log_task_change(
+            task.column.board.project_id,
+            request.user.username if request.user.is_authenticated else "System",
+            task.title,
+            f"Assigned to {assignee_name}",
         )
 
     response = HttpResponse()
     # Trigger HTMX to reload the board and close the modal
-    response['HX-Trigger'] = 'columnUpdated, closeModal'
+    response["HX-Trigger"] = "columnUpdated, closeModal"
     return response
+
+
+# --- History Endpoints ---
+
+
+@api.delete("/projects/{project_id}/history")
+def delete_project_history(request, project_id: int):
+    """Deletes the project history file"""
+    get_object_or_404(Project, id=project_id)
+    file_path = get_history_file_path(project_id)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    # Return empty response to swap the outerHTML and remove the element entirely
+    return HttpResponse("")

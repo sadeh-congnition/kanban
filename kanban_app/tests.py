@@ -12,7 +12,9 @@ class TaskMoveTest(TestCase):
         self.col1 = Column.objects.create(board=self.board, name="To Do", order=0)
         self.col2 = Column.objects.create(board=self.board, name="In Progress", order=1)
         self.user = User.objects.create(username="testuser")
-        self.task1 = Task.objects.create(column=self.col1, title="Task 1", order=0, assigned_to=self.user)
+        self.task1 = Task.objects.create(
+            column=self.col1, title="Task 1", order=0, assigned_to=self.user
+        )
 
     def test_move_task_different_column(self):
         c = Client()
@@ -30,7 +32,9 @@ class TaskMoveTest(TestCase):
         self.assertEqual(self.task1.column_id, self.col2.id)
 
     def test_move_unassigned_task_different_column_fails(self):
-        task_unassigned = Task.objects.create(column=self.col1, title="Unassigned", order=1)
+        task_unassigned = Task.objects.create(
+            column=self.col1, title="Unassigned", order=1
+        )
         c = Client()
         response = c.post(
             f"/api/tasks/{task_unassigned.id}/move",
@@ -152,7 +156,9 @@ class TaskStatusHistoryTest(TestCase):
     def test_status_history_on_task_move(self):
         user = User.objects.create(username="histuser")
         # Create a task directly using ORM (mimics existing task)
-        task = Task.objects.create(column=self.col1, title="Moving Task", order=0, assigned_to=user)
+        task = Task.objects.create(
+            column=self.col1, title="Moving Task", order=0, assigned_to=user
+        )
 
         c = Client()
         response = c.post(

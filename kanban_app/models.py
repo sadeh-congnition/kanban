@@ -31,10 +31,7 @@ class Project(models.Model):
 
 
 class Tag(models.Model):
-    project = models.ForeignKey(
-        Project,
-        related_name='tags',
-        on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, related_name="tags", on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     color = models.CharField(max_length=20, default="#3b82f6")
 
@@ -44,11 +41,8 @@ class Tag(models.Model):
 
 class Board(models.Model):
     project = models.OneToOneField(
-        Project,
-        related_name='board',
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True)
+        Project, related_name="board", on_delete=models.CASCADE, null=True, blank=True
+    )
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -58,36 +52,30 @@ class Board(models.Model):
 
 
 class Column(models.Model):
-    board = models.ForeignKey(
-        Board,
-        related_name='columns',
-        on_delete=models.CASCADE)
+    board = models.ForeignKey(Board, related_name="columns", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['order']
+        ordering = ["order"]
 
     def __str__(self):
         return f"{self.board.name} - {self.name}"
 
 
 class Task(models.Model):
-    column = models.ForeignKey(
-        Column,
-        related_name='tasks',
-        on_delete=models.CASCADE)
+    column = models.ForeignKey(Column, related_name="tasks", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    tags = models.ManyToManyField(Tag, related_name='tasks', blank=True)
+    tags = models.ManyToManyField(Tag, related_name="tasks", blank=True)
     assigned_to = models.ForeignKey(
         User,
-        related_name='assigned_tasks',
+        related_name="assigned_tasks",
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
     )
     order = models.IntegerField(default=0)
     project_task_id = models.IntegerField(null=True, blank=True)
@@ -95,7 +83,7 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['order']
+        ordering = ["order"]
 
     def __str__(self):
         return self.title
@@ -103,23 +91,16 @@ class Task(models.Model):
 
 class TaskStatusHistory(models.Model):
     task = models.ForeignKey(
-        Task,
-        related_name='status_history',
-        on_delete=models.CASCADE)
+        Task, related_name="status_history", on_delete=models.CASCADE
+    )
     old_column = models.ForeignKey(
-        Column,
-        related_name='+',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True)
-    new_column = models.ForeignKey(
-        Column,
-        related_name='+',
-        on_delete=models.CASCADE)
+        Column, related_name="+", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    new_column = models.ForeignKey(Column, related_name="+", on_delete=models.CASCADE)
     changed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-changed_at']
+        ordering = ["-changed_at"]
 
     def __str__(self):
         return f"{self.task.title} moved to {self.new_column.name} at {self.changed_at}"
@@ -127,25 +108,18 @@ class TaskStatusHistory(models.Model):
 
 class TaskAssignmentHistory(models.Model):
     task = models.ForeignKey(
-        Task,
-        related_name='assignment_history',
-        on_delete=models.CASCADE)
+        Task, related_name="assignment_history", on_delete=models.CASCADE
+    )
     old_assignee = models.ForeignKey(
-        User,
-        related_name='+',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True)
+        User, related_name="+", on_delete=models.SET_NULL, null=True, blank=True
+    )
     new_assignee = models.ForeignKey(
-        User,
-        related_name='+',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True)
+        User, related_name="+", on_delete=models.SET_NULL, null=True, blank=True
+    )
     changed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-changed_at']
+        ordering = ["-changed_at"]
 
     def __str__(self):
         return f"{self.task.title} assigned from {self.old_assignee} to {self.new_assignee} at {self.changed_at}"

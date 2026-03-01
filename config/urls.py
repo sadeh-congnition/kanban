@@ -14,15 +14,16 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 from kanban_app.views import index, project_board
 from kanban_app.api import api
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('accounts/', include('django.contrib.auth.urls')),
-    path('api/', api.urls),
-    path('', index, name='index'),
-    path('project/<int:project_id>/', project_board, name='project_board'),
+    path("admin/", admin.site.urls),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("api/", api.urls),
+    path("", index, name="index"),
+    path("project/<int:project_id>/", project_board, name="project_board"),
 ]
