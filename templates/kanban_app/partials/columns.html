@@ -37,7 +37,7 @@
             {% if task.description %}
             <div class="task-desc">{{ task.description }}</div>
             {% endif %}
-            <div class="task-assignee" style="margin-bottom: 0.3rem;">
+            <div class="task-assignee" style="margin-bottom: 0.3rem; display: flex; gap: 0.25rem; align-items: center;">
                 <button class="btn btn-sm btn-ghost"
                     style="padding: 0.1rem 0.3rem; font-size: 0.75rem; color: #52525b; display: flex; align-items: center; gap: 0.2rem;"
                     hx-get="/api/tasks/{{ task.id }}/assign/form" hx-target="#modal-container" hx-swap="innerHTML"
@@ -53,6 +53,13 @@
                     Unassigned
                     {% endif %}
                 </button>
+                {% if task.assigned_to_id != request.user.id %}
+                <button class="btn btn-sm btn-ghost" style="padding: 0.1rem 0.3rem; font-size: 0.75rem;"
+                    hx-post="/api/tasks/{{ task.id }}/assign" hx-vals='{"user_id": "{{ request.user.id }}"}'
+                    hx-swap="none" title="Assign to me" onclick="event.stopPropagation()">
+                    Assign to me
+                </button>
+                {% endif %}
             </div>
             <div class="task-actions" style="display: flex; gap: 0.25rem;">
                 <button class="btn btn-sm btn-ghost" style="padding: 0.1rem 0.3rem;"
