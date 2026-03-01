@@ -5,18 +5,26 @@
             <button class="btn btn-ghost" onclick="closeModal()">&times;</button>
         </div>
         <form hx-post="/api/tasks/{{ task.id }}/assign" hx-swap="none">
-            <div class="form-group">
-                <label for="assign_user" class="form-label">Select User</label>
-                <select name="user_id" id="assign_user" class="form-control">
-                    <option value="" {% if not task.assigned_to_id %}selected{% endif %}>Unassigned</option>
-                    {% for u in users %}
-                    {% if task.assigned_to_id == u.id %}
-                    <option value="{{ u.id }}" selected>{{ u.username }}</option>
-                    {% else %}
-                    <option value="{{ u.id }}">{{ u.username }}</option>
-                    {% endif %}
-                    {% endfor %}
-                </select>
+            <div class="form-group" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                <div style="flex: 1;">
+                    <label for="assign_user" class="form-label">Select User</label>
+                    <select name="user_id" id="assign_user" class="form-control">
+                        <option value="" {% if not task.assigned_to_id %}selected{% endif %}>Unassigned</option>
+                        {% for u in users %}
+                        {% if task.assigned_to_id == u.id %}
+                        <option value="{{ u.id }}" selected>{{ u.username }}</option>
+                        {% else %}
+                        <option value="{{ u.id }}">{{ u.username }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if task.assigned_to_id != request.user.id %}
+                <button type="submit" name="user_id" value="{{ request.user.id }}" class="btn btn-sm btn-ghost"
+                    style="margin-bottom: 2px;">
+                    Assign to me
+                </button>
+                {% endif %}
             </div>
 
             <div class="form-actions">
