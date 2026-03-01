@@ -33,7 +33,7 @@ class TaskAdmin(admin.ModelAdmin):
         'get_tags',
         'created_at',
         'updated_at')
-    list_filter = ('column__board', 'column')
+    list_filter = ('column__board__project', 'column__board', 'column')
     search_fields = ('title', 'description')
 
     def get_queryset(self, request):
