@@ -22,8 +22,7 @@ def test_get_project_form(api_client):
 def test_create_project(api_client):
     response = api_client.post("/api/projects", {"name": "New Project"})
     assert response.status_code == 200
-    assert response.headers.get(
-        "HX-Trigger") == "projectListUpdated, closeModal"
+    assert response.headers.get("HX-Trigger") == "projectListUpdated, closeModal"
     assert Project.objects.filter(name="New Project").exists()
 
 
@@ -85,7 +84,8 @@ def test_get_board_columns_form(api_client):
 def test_create_column(api_client):
     board = baker.make(Board)
     response = api_client.post(
-        f"/api/boards/{board.id}/columns", {"name": "In Progress"})
+        f"/api/boards/{board.id}/columns", {"name": "In Progress"}
+    )
     assert response.status_code == 200
     assert response.headers.get("HX-Trigger") == "columnUpdated, closeModal"
     assert Column.objects.filter(board=board, name="In Progress").exists()
@@ -106,8 +106,7 @@ def test_move_column(api_client):
     col1 = baker.make(Column, board=board, order=0)
     col2 = baker.make(Column, board=board, order=1)
     col3 = baker.make(Column, board=board, order=2)
-    response = api_client.post(
-        f"/api/columns/{col3.id}/move", {"new_order": 0})
+    response = api_client.post(f"/api/columns/{col3.id}/move", {"new_order": 0})
     if response.status_code != 204:
         print(response.content)
     assert response.status_code == 204
@@ -157,7 +156,8 @@ def test_update_task_tags(api_client):
     tag2 = baker.make(Tag, project=project)
 
     response = api_client.post(
-        f"/api/tasks/{task.id}/tags", {"tags": [tag1.id, tag2.id]})
+        f"/api/tasks/{task.id}/tags", {"tags": [tag1.id, tag2.id]}
+    )
     if response.status_code != 200:
         print(response.content)
     assert response.status_code == 200
@@ -176,26 +176,34 @@ def test_task_assignment(api_client):
 
     # Assign to user1
     response = api_client.post(
-        f"/api/tasks/{task.id}/assign", {"user_id": str(user1.id)})
+        f"/api/tasks/{task.id}/assign", {"user_id": str(user1.id)}
+    )
     assert response.status_code == 200
     task.refresh_from_db()
     assert task.assigned_to == user1
-    assert TaskAssignmentHistory.objects.filter(task=task, old_assignee=None, new_assignee=user1).exists()
+    assert TaskAssignmentHistory.objects.filter(
+        task=task, old_assignee=None, new_assignee=user1
+    ).exists()
 
     # Re-assign to user2
     response = api_client.post(
-        f"/api/tasks/{task.id}/assign", {"user_id": str(user2.id)})
+        f"/api/tasks/{task.id}/assign", {"user_id": str(user2.id)}
+    )
     assert response.status_code == 200
     task.refresh_from_db()
     assert task.assigned_to == user2
-    assert TaskAssignmentHistory.objects.filter(task=task, old_assignee=user1, new_assignee=user2).exists()
+    assert TaskAssignmentHistory.objects.filter(
+        task=task, old_assignee=user1, new_assignee=user2
+    ).exists()
 
     # Unassign
     response = api_client.post(f"/api/tasks/{task.id}/assign", {})
     assert response.status_code == 200
     task.refresh_from_db()
     assert task.assigned_to is None
-    assert TaskAssignmentHistory.objects.filter(task=task, old_assignee=user2, new_assignee=None).exists()
+    assert TaskAssignmentHistory.objects.filter(
+        task=task, old_assignee=user2, new_assignee=None
+    ).exists()
 
 
 @pytest.mark.django_db
@@ -214,12 +222,14 @@ def test_update_task_details(api_client):
     project = baker.make(Project)
     board = baker.make(Board, project=project)
     col = baker.make(Column, board=board)
-    task = baker.make(Task, column=col, title="Old Title", description="Old Description")
+    task = baker.make(
+        Task, column=col, title="Old Title", description="Old Description"
+    )
 
-    response = api_client.post(f"/api/tasks/{task.id}/update_details", {
-        "title": "New Title",
-        "description": "New Description"
-    })
+    response = api_client.post(
+        f"/api/tasks/{task.id}/update_details",
+        {"title": "New Title", "description": "New Description"},
+    )
 
     assert response.status_code == 200
     assert response.headers.get("HX-Trigger") == "columnUpdated"

@@ -5,23 +5,53 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('kanban_app', '0005_tag_task_tags'),
+        ("kanban_app", "0005_tag_task_tags"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='TaskStatusHistory',
+            name="TaskStatusHistory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('changed_at', models.DateTimeField(auto_now_add=True)),
-                ('new_column', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='+', to='kanban_app.column')),
-                ('old_column', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='kanban_app.column')),
-                ('task', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='status_history', to='kanban_app.task')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("changed_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "new_column",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="+",
+                        to="kanban_app.column",
+                    ),
+                ),
+                (
+                    "old_column",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="+",
+                        to="kanban_app.column",
+                    ),
+                ),
+                (
+                    "task",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="status_history",
+                        to="kanban_app.task",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-changed_at'],
+                "ordering": ["-changed_at"],
             },
         ),
     ]
