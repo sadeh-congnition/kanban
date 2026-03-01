@@ -323,11 +323,30 @@ def get_task_details(request, task_id: int):
     task_tag_ids = list(task.tags.values_list('id', flat=True))
     users = User.objects.all()
 
+    # Build combined chronological change history
+    history: list[dict] = []
+    for entry in task.status_history.select_related('old_column', 'new_column').all():
+        history.append({
+            'type': 'status',
+            'changed_at': entry.changed_at,
+            'old_column': entry.old_column,
+            'new_column': entry.new_column,
+        })
+    for entry in task.assignment_history.select_related('old_assignee', 'new_assignee').all():
+        history.append({
+            'type': 'assignment',
+            'changed_at': entry.changed_at,
+            'old_assignee': entry.old_assignee,
+            'new_assignee': entry.new_assignee,
+        })
+    history.sort(key=lambda x: x['changed_at'])
+
     return render(request, "kanban_app/partials/task_details.html", {
         "task": task,
         "tags": tags,
         "task_tag_ids": task_tag_ids,
-        "users": users
+        "users": users,
+        "history": history,
     })
 
 

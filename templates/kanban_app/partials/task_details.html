@@ -91,5 +91,50 @@
 
             </div>
         </div>
+
+        {% if history %}
+        <div style="margin-top: 2rem; padding-left: 0.5rem;">
+            <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: #3f3f46;">Change History</h3>
+            <div
+                style="display: flex; flex-direction: column; gap: 0; border-left: 2px solid #3f3f46; padding-left: 1rem;">
+                {% for event in history %}
+                <div style="position: relative; padding: 0.5rem 0 0.5rem 0.25rem;">
+                    {% if event.type == 'status' %}
+                    <div
+                        style="position: absolute; left: -1.4rem; top: 0.85rem; width: 0.65rem; height: 0.65rem; border-radius: 50%; background-color: #6366f1; border: 2px solid #27272a;">
+                    </div>
+                    {% else %}
+                    <div
+                        style="position: absolute; left: -1.4rem; top: 0.85rem; width: 0.65rem; height: 0.65rem; border-radius: 50%; background-color: #10b981; border: 2px solid #27272a;">
+                    </div>
+                    {% endif %}
+                    <p style="margin: 0; font-size: 0.8rem; color: #71717a;">{{ event.changed_at|date:"M j, Y H:i" }}
+                    </p>
+                    {% if event.type == 'status' %}
+                    <p style="margin: 0.15rem 0 0; font-size: 0.875rem; color: #d4d4d8;">
+                        {% if event.old_column %}
+                        Moved from <strong style="color: white;">{{ event.old_column.name }}</strong> to <strong
+                            style="color: white;">{{ event.new_column.name }}</strong>
+                        {% else %}
+                        Created in <strong style="color: white;">{{ event.new_column.name }}</strong>
+                        {% endif %}
+                    </p>
+                    {% elif event.type == 'assignment' %}
+                    <p style="margin: 0.15rem 0 0; font-size: 0.875rem; color: #d4d4d8;">
+                        {% if event.new_assignee and event.old_assignee %}
+                        Reassigned from <strong style="color: white;">{{ event.old_assignee.username }}</strong> to
+                        <strong style="color: white;">{{ event.new_assignee.username }}</strong>
+                        {% elif event.new_assignee %}
+                        Assigned to <strong style="color: white;">{{ event.new_assignee.username }}</strong>
+                        {% else %}
+                        Unassigned from <strong style="color: white;">{{ event.old_assignee.username }}</strong>
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
