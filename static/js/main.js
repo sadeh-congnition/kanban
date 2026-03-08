@@ -90,3 +90,46 @@ function closeModal() {
 document.body.addEventListener('closeModal', function () {
     closeModal();
 });
+
+// HTMX event listeners for error handling
+document.body.addEventListener('htmx:responseError', function(evt) {
+    // Check if this is a task move request
+    if (evt.detail.requestConfig && evt.detail.requestConfig.path && evt.detail.requestConfig.path.includes('/tasks/') && evt.detail.requestConfig.path.includes('/move')) {
+        showErrorMessage(evt.detail.xhr.responseText || 'Failed to move task');
+        // Revert the move in the UI by triggering a board refresh
+        htmx.trigger(document.body, 'columnUpdated');
+    }
+});
+
+// Function to show error messages to the user
+function showErrorMessage(message) {
+    // Create or update error toast
+    let errorToast = document.getElementById('error-toast');
+    if (!errorToast) {
+        errorToast = document.createElement('div');
+        errorToast.id = 'error-toast';
+        errorToast.className = 'fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 max-w-md cursor-pointer transition-all duration-300';
+        errorToast.style.cssText = `
+            background: var(--danger-color);
+            color: var(--text-primary);
+            border: 1px solid var(--danger-hover);
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            box-shadow: var(--shadow-lg);
+        `;
+        document.body.appendChild(errorToast);
+    }
+    
+    errorToast.textContent = message;
+    errorToast.style.display = 'block';
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        errorToast.style.display = 'none';
+    }, 5000);
+    
+    // Allow clicking to dismiss
+    errorToast.onclick = function() {
+        errorToast.style.display = 'none';
+    };
+}
