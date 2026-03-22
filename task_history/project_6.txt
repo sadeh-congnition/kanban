@@ -1,12 +1,1 @@
-2026-03-19 10:48:28 -> mokt -> Temperature and max_tokens -> Created in In Progress
-2026-03-19 10:48:31 -> mokt -> Temperature and max_tokens -> Assigned to mokt
-2026-03-19 10:49:44 -> mokt -> Temperature and max_tokens -> Moved from In Progress to Done
-2026-03-19 20:29:32 -> mokt -> Simplify chat.py -> Created in In Progress
-2026-03-19 20:29:47 -> mokt -> Simplify chat.py -> Assigned to mokt
-2026-03-19 20:29:50 -> mokt -> Simplify chat.py -> Tags updated
-2026-03-19 20:30:16 -> mokt -> Temperature and max_tokens -> Tags updated
-2026-03-19 20:30:20 -> mokt -> Cache LLM calls -> Tags updated
-2026-03-19 20:30:23 -> mokt -> LMStudio integration through LMStudio API -> Tags updated
-2026-03-19 20:30:27 -> mokt -> Add llm response streaming -> Tags updated
-2026-03-19 20:30:44 -> mokt -> Add optional project FK to chat -> Created in In Progress
-2026-03-19 20:30:45 -> mokt -> Add optional project FK to chat -> Assigned to mokt
+2026-03-20 21:38:57 -> mokt -> Add optional project FK to chat -> Moved from In Progress to Done
